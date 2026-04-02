@@ -224,7 +224,15 @@
             </div>
 
             <div class="form-group">
-                <label for="buktiIgHmps">8. Upload bukti follow IG HMPS Informatika <span style="color:#f44336">*</span></label>
+                <label for="buktiKtm">8. Upload Foto KTM <span style="color:#f44336">*</span></label>
+                <div class="input-with-icon">
+                    <input type="file" id="buktiKtm" accept="image/*" required>
+                    <i class="fas fa-id-badge"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="buktiIgHmps">9. Upload bukti follow IG HMPS Informatika <span style="color:#f44336">*</span></label>
                 <div class="input-with-icon">
                     <input type="file" id="buktiIgHmps" accept="image/*" required>
                     <i class="fab fa-instagram"></i>
@@ -232,7 +240,7 @@
             </div>
 
             <div class="form-group">
-                <label for="buktiIgUpu">9. Upload bukti follow IG Official UPU <span style="color:#f44336">*</span></label>
+                <label for="buktiIgUpu">10. Upload bukti follow IG Official UPU <span style="color:#f44336">*</span></label>
                 <div class="input-with-icon">
                     <input type="file" id="buktiIgUpu" accept="image/*" required>
                     <i class="fab fa-instagram"></i>
@@ -240,15 +248,15 @@
             </div>
 
             <div class="form-group">
-                <label for="namaBank">10. Nama bank/ewallet Anda yang digunakan untuk transfer <span style="color:#f44336">*</span></label>
+                <label for="namaBank">11. Nama bank/ewallet Anda yang digunakan untuk transfer <span style="color:#f44336">*</span></label>
                 <div class="input-with-icon">
-                    <input type="text" id="namaBank" placeholder="Contoh: BCA / DANA / OVO" required minlength="2">
+                    <input type="text" id="namaBank" placeholder="Contoh: BCA = BUDI / DANA = Ridho Sandhika/ OVO = Azwar" required minlength="2">
                     <i class="fas fa-wallet"></i>
                 </div>
             </div>
 
             <div class="form-group">
-                <label>11. Instruksi Pembayaran Transfer</label>
+                <label>12. Instruksi Pembayaran Transfer</label>
                 <div class="transfer-box">
                     <p style="font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Silakan Transfer Biaya Kunjungan Ke:</p>
                     <div class="transfer-bank">BANK BRI</div>
@@ -258,7 +266,7 @@
             </div>
 
             <div class="form-group">
-                <label for="buktiPembayaran">12. Upload bukti pembayaran <span style="color:#f44336">*</span></label>
+                <label for="buktiPembayaran">13. Upload bukti pembayaran <span style="color:#f44336">*</span></label>
                 <div class="input-with-icon">
                     <input type="file" id="buktiPembayaran" accept="image/*" required>
                     <i class="fas fa-receipt"></i>
@@ -333,18 +341,20 @@
             const universitas = document.getElementById('universitas').value.trim();
             const namaBank = document.getElementById('namaBank').value.trim();
 
-            // File gambar
+            // File gambar (Ditambah buktiKtm)
+            const fileKtm = document.getElementById('buktiKtm').files[0];
             const fileIgHmps = document.getElementById('buktiIgHmps').files[0];
             const fileIgUpu = document.getElementById('buktiIgUpu').files[0];
             const filePembayaran = document.getElementById('buktiPembayaran').files[0];
 
-            // Validasi yang disesuaikan
+            // Validasi teks
             if (!nama || !nim || !kelas || !semester || !prodi || !fakultas || !universitas || !namaBank) {
                 showAlert('SYSTEM ERROR: Semua isian teks wajib diisi.', 'error');
                 return;
             }
 
-            if (!fileIgHmps || !fileIgUpu || !filePembayaran) {
+            // Validasi gambar (Ditambah validasi fileKtm)
+            if (!fileKtm || !fileIgHmps || !fileIgUpu || !filePembayaran) {
                 showAlert('SYSTEM ERROR: Semua bukti gambar wajib diupload.', 'error');
                 return;
             }
@@ -354,13 +364,15 @@
             alertMessage.style.display = 'none';
 
             try {
-                const [urlIgHmps, urlIgUpu, urlPembayaran] = await Promise.all([
+                // Upload semua file gambar secara bersamaan
+                const [urlKtm, urlIgHmps, urlIgUpu, urlPembayaran] = await Promise.all([
+                    uploadImage(fileKtm),
                     uploadImage(fileIgHmps),
                     uploadImage(fileIgUpu),
                     uploadImage(filePembayaran)
                 ]);
 
-                // Simpan data ke Firestore (Tanpa noRekening)
+                // Simpan data ke Firestore termasuk URL KTM
                 await addDoc(collection(db, "pendaftaran_aice_lengkap"), {
                     nama: nama,
                     nim: nim,
@@ -370,6 +382,7 @@
                     fakultas: fakultas,
                     universitas: universitas,
                     namaBank: namaBank,
+                    buktiKtmUrl: urlKtm, // Field baru disimpan di database
                     buktiIgHmpsUrl: urlIgHmps,
                     buktiIgUpuUrl: urlIgUpu,
                     buktiPembayaranUrl: urlPembayaran,
