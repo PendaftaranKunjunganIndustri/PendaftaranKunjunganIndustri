@@ -7,6 +7,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
+    <script src="https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js"></script>
+    
     <style>
         :root {
             --primary-color: #00e6ff;
@@ -226,7 +228,7 @@
             <div class="form-group">
                 <label for="buktiKtm">8. Upload Foto KTM <span style="color:#f44336">*</span></label>
                 <div class="input-with-icon">
-                    <input type="file" id="buktiKtm" accept=".jpg, .jpeg, .png, .webp, image/jpeg, image/png, image/webp" required>
+                    <input type="file" id="buktiKtm" accept="image/*, .heic, .heif" required>
                     <i class="fas fa-id-badge"></i>
                 </div>
             </div>
@@ -234,7 +236,7 @@
             <div class="form-group">
                 <label for="buktiIgHmps">9. Upload bukti follow IG HMPS Informatika <span style="color:#f44336">*</span></label>
                 <div class="input-with-icon">
-                    <input type="file" id="buktiIgHmps" accept=".jpg, .jpeg, .png, .webp, image/jpeg, image/png, image/webp" required>
+                    <input type="file" id="buktiIgHmps" accept="image/*, .heic, .heif" required>
                     <i class="fab fa-instagram"></i>
                 </div>
             </div>
@@ -242,7 +244,7 @@
             <div class="form-group">
                 <label for="buktiIgUpu">10. Upload bukti follow IG Official UPU <span style="color:#f44336">*</span></label>
                 <div class="input-with-icon">
-                    <input type="file" id="buktiIgUpu" accept=".jpg, .jpeg, .png, .webp, image/jpeg, image/png, image/webp" required>
+                    <input type="file" id="buktiIgUpu" accept="image/*, .heic, .heif" required>
                     <i class="fab fa-instagram"></i>
                 </div>
             </div>
@@ -268,10 +270,11 @@
             <div class="form-group">
                 <label for="buktiPembayaran">13. Upload bukti pembayaran <span style="color:#f44336">*</span></label>
                 <div class="input-with-icon">
-                    <input type="file" id="buktiPembayaran" accept=".jpg, .jpeg, .png, .webp, image/jpeg, image/png, image/webp" required>
+                    <input type="file" id="buktiPembayaran" accept="image/*, .heic, .heif" required>
                     <i class="fas fa-receipt"></i>
                 </div>
             </div>
+
             <button type="submit" class="btn-submit" id="submitBtn">DAFTAR SEKARANG</button>
             <div id="alertMessage" class="alert"></div>
         </form>
@@ -304,10 +307,45 @@
             alertMessage.style.display = 'block';
         }
 
+        // FUNGSI UPLOAD YANG SUDAH TERINTEGRASI HEIC2ANY
         async function uploadImage(file) {
+            let fileToUpload = file;
+
+            // 1. CEK & KONVERSI JIKA FILE ADALAH HEIC/HEIF
+            const namaFile = file.name.toLowerCase();
+            if (file.type === "image/heic" || file.type === "image/heif" || namaFile.endsWith(".heic") || namaFile.endsWith(".heif")) {
+                try {
+                    console.log(`Mendeteksi file HEIC (${file.name}), memulai konversi ke JPG...`);
+                    
+                    // Proses konversi HEIC ke JPG menggunakan heic2any
+                    const convertedBlob = await heic2any({
+                        blob: file,
+                        toType: "image/jpeg",
+                        quality: 0.8 // Kualitas 80% agar proses cepat dan ukuran ideal
+                    });
+
+                    // Kadang heic2any mengembalikan array (jika gambar beranimasi), kita ambil yang pertama
+                    const finalBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+
+                    // Ganti nama ekstensi file dari .heic menjadi .jpg
+                    const namaBaru = file.name.replace(/\.[^/.]+$/, ".jpg");
+                    
+                    // Ubah hasil konversi (Blob) kembali menjadi bentuk File
+                    fileToUpload = new File([finalBlob], namaBaru, {
+                        type: "image/jpeg"
+                    });
+                    
+                    console.log(`Konversi berhasil: ${namaBaru}`);
+                } catch (error) {
+                    console.error("Gagal konversi HEIC:", error);
+                    throw new Error("Gagal mengkonversi format iPhone (HEIC).");
+                }
+            }
+
+            // 2. PROSES UPLOAD KE IMGBB
             const imgbbAPIKey = "1673e7b27bb7c96c324b1b26cc392dca"; 
             const formData = new FormData();
-            formData.append("image", file);
+            formData.append("image", fileToUpload);
 
             try {
                 const response = await fetch(`https://api.imgbb.com/1/upload?key=${imgbbAPIKey}`, {
@@ -330,7 +368,7 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            // Variabel teks (tanpa noRekening)
+            // Variabel teks
             const nama = document.getElementById('nama').value.trim();
             const nim = document.getElementById('nim').value.trim();
             const kelas = document.getElementById('kelas').value.trim();
@@ -340,7 +378,7 @@
             const universitas = document.getElementById('universitas').value.trim();
             const namaBank = document.getElementById('namaBank').value.trim();
 
-            // File gambar (Ditambah buktiKtm)
+            // File gambar
             const fileKtm = document.getElementById('buktiKtm').files[0];
             const fileIgHmps = document.getElementById('buktiIgHmps').files[0];
             const fileIgUpu = document.getElementById('buktiIgUpu').files[0];
@@ -352,18 +390,18 @@
                 return;
             }
 
-            // Validasi gambar (Ditambah validasi fileKtm)
+            // Validasi gambar
             if (!fileKtm || !fileIgHmps || !fileIgUpu || !filePembayaran) {
                 showAlert('SYSTEM ERROR: Semua bukti gambar wajib diupload.', 'error');
                 return;
             }
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> UPLOADING FILES & DATA...';
+            submitBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> MEMPROSES & UPLOADING DATA...';
             alertMessage.style.display = 'none';
 
             try {
-                // Upload semua file gambar secara bersamaan
+                // Upload semua file gambar secara bersamaan (termasuk konversi HEIC jika ada)
                 const [urlKtm, urlIgHmps, urlIgUpu, urlPembayaran] = await Promise.all([
                     uploadImage(fileKtm),
                     uploadImage(fileIgHmps),
@@ -371,7 +409,7 @@
                     uploadImage(filePembayaran)
                 ]);
 
-                // Simpan data ke Firestore termasuk URL KTM
+                // Simpan data ke Firestore
                 await addDoc(collection(db, "pendaftaran_aice_lengkap"), {
                     nama: nama,
                     nim: nim,
@@ -381,7 +419,7 @@
                     fakultas: fakultas,
                     universitas: universitas,
                     namaBank: namaBank,
-                    buktiKtmUrl: urlKtm, // Field baru disimpan di database
+                    buktiKtmUrl: urlKtm,
                     buktiIgHmpsUrl: urlIgHmps,
                     buktiIgUpuUrl: urlIgUpu,
                     buktiPembayaranUrl: urlPembayaran,
@@ -393,7 +431,7 @@
                 form.reset();
             } catch (error) {
                 console.error("Proses Pendaftaran Error: ", error);
-                showAlert('CONNECTION FAILED! Pastikan koneksi internet stabil.', 'error');
+                showAlert('CONNECTION FAILED! Pastikan koneksi internet stabil atau coba gunakan format gambar standar (JPG/PNG).', 'error');
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'DAFTAR SEKARANG';
